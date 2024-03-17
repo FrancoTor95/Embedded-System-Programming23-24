@@ -40,41 +40,4 @@ Every lesson will be updated during the course.
 ## Topics
 * [C basic programming](https://github.com/FrancoTor95/Embedded-System-Programming23-24/tree/main/01%20-%20C%20Programming#introduction-to-the-c-programming-language)
 
-The following references are useful for mastering the basic knowledge of the development platform [mbed](https://os.mbed.com).
-* [Mbed online compiler](https://ide.mbed.com/compiler)
-* [Mbed Studio](https://os.mbed.com/studio)
-* [Mbed Platform]
-    * [GPIO programming with mbed]
-    * [Interrupts with mbed]
-    * [mbed with ADC and DAC]
-    * [Timers with mbed]
-    * [Generating PWM signals with mbed]
-    * [UART communication with mbed]
-    * [I<sup>2</sup>C communication with mbed]
-    * [SPI communication with mbed]
-     * [RTOS with mbed // RTX]
-***
-
-## Detailed list of the materials used
-
-- STM32 Nucleo-F446RE
-- Mini-USB <-> USB cable
-- Breadboard
-- Cables
-- Resistors
-- Capacitors
-- Buttons
-- LED
-- Motion Sensor (Type: HC-SR501)
-- Rotary Potentiometer
-- Analog temperature sensor (Type: LMT84, LM35, NTC Thermistor 10K)
-- Buzzer
-- Shift Register (Type: 74HC595N)
-- I2C IMU (Type: MPU-6050 in GY-521 module)
-
-##### Material used exclusively in the second module of the course
-- DC motor with control driver
-- Servomotor
-- Digital rotary encoder
-- Ultrasonic sensor (Type: HC-SR04)
--------------------
+* [STM32 Base Programming](https://github.com/FrancoTor95/Embedded-System-Programming23-24/tree/main/01%20-%20C%20Programming#introduction-to-the-c-programming-language)

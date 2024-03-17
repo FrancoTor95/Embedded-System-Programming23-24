@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "convolve.h"
+#include "convolve.h"
 
 // Utility Function
 void array_fill(float *a, int a_size){

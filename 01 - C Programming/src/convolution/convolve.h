@@ -2,7 +2,7 @@
 
 #define CONVOLVE_H_INCLUDED_
 
-const float PI = 3.14;
+// const float PI = 3.14;
 void array_fill(float *a, int a_size);
 void array_print(float *a, int a_size);
 float* conv(float *f, float *g, int f_size, int g_size, int* C_size);
