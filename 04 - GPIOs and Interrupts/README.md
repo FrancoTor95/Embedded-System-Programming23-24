@@ -8,30 +8,26 @@ This documentation illustrates how to configure and use the *General Purpose Inp
 The desired result is to have an application that notices the pressure on the buttons, connected to the input pins, thanks to external **interrupts**, avoiding *polling* operations. Consequently, the logical state of some **GPIO** outputs will be changed.
 
 ## Theoretical Aspects
-When dealing directly with hardware, and not only working at the software level, it is important to know how to deal with **asynchronous** events, generally (but not always) originating from peripherals external to the computing unit. For this reason, every microcontroller provides an interrupt mechanism (**interrupts**) to be able to manage asynchronous events; this mechanism allows to govern an essential interruption of the code in execution, in favor of particular functions that take the name of **I**nterrupt **S**ervice **R**outine (**ISR**), based on priority criteria. ARM distinguishes between system exceptions, which originate inside the CPU core, and hardware exceptions coming from external peripherals, also called *Interrupt Requests* (**IRQ**). Programmers manage exceptions through the use of specific **ISR**s, which are coded at higher level (most often using C language). The processor knows where to locate these routines thanks to an indirect table containing the addresses in memory of Interrupt Service Routines. This table is commonly called *vector table*, and every STM32 microcontrollers defines its own. Even if the *vector table* contains the addresses of the handler routines, the Cortex-M core needs a way to find the vector table inside memory. By convention, the vector table starts at the hardware address `0x0000 0000` in all Cortex-M based processors. If the vector table resides in the internal flash memory (this is what usually happens), and since the flash in all STM32 MCUs is mapped from `0x0800 0000` address, it is placed starting from the `0x0800 0000` address, which is aliased to `0x0000 0000` when the CPU boots up.
+When dealing directly with hardware, and not only working at the software level, it is important to know how to deal with **asynchronous** events, generally (but not always) originating from peripherals external to the computing unit .
+For this reason, every microcontroller provides an interrupt mechanism (**interrupts**) to be able to manage asynchronous events; this mechanism allows to govern an essential interruption of the code in execution, in favor of particular functions that take the name of **I**nterrupt **S**ervice **R**outine (**ISR**), based on priority criteria.
 
 These *routines* can be programmed to be invoked with respect to particular temporal events or at the occurrence of physical events, giving rise, in this case, to *event-driven* applications.
+Inside a software for an *embedded system* , the **ISR** are coded as real functions, which however are not invoked anywhere, directly, in the code written by the programmer.
 
-Now lets discuss about the topic of this class: **External Event**. From the hardware point of view, the management of external **interrupts** is mainly mediated by two modules:
+From the hardware point of view, the management of **interrupts** is mainly mediated by two modules:
 * **N**ested **V**ectored **I**nterrupt **C**ontroller (**NVIC**)
 
   >The **NVIC** maintains knowledge of the stacked (nested) interrupts to enable tail-chaining of interrupts. The **NVIC** supports up to 240 dynamically reprioritizable interrupts each with up to 256 levels of priority. The **NVIC** and the processor core interface are closely coupled, which enables low latency interrupt processing and efficient processing of late arriving interrupts.</br></br>
-  <img src="img/nvic.png" alt="drawing" width="600" style="display: block; margin: 0 auto"/>
+  ![NVIC e Core Processor](img/nvic.png)
 
 * **EXT**ernal **I**nterrupt/event Controller (EXTI)
 
-  > The External Interrupt/Event Controller (EXTI) is a dedicated programmable controller and is responsible of the interconnection between
-    the external I/O signals and the NVIC controller. The external interrupt/event controller consists of up to 23 edge detectors for generating event/interrupt requests. Each input line can be independently configured to select the type of the interrupt and the corresponding trigger event (rising or falling or both). Each line can also be masked independently. A pending register maintains the status line of the interrupt requests. STM32 microcontrollers provide a variable number of external interrupt sources connected to the NVIC through the EXTI controller, which in turn is capable to manage several EXTI *lines*. The number of interrupt sources and lines depends on the specific STM32 family. GPIO are connected to the EXTI lines, and it is possible to enable interrupts for every MCU GPIO, even if the most of them share the same interrupt line. For example, for an STM32F4 MCU, up to 114 GPIOs are connected to 16 EXTI *lines*. However, only 7 of these lines have an independent interrupt associated with them. 
-    <img src="img/external_lines_NVIC.png" alt="drawing" width="400" style="display: block; margin: 0 auto"/> 
-    For EXTI lines sharing the same IRQ inside the NVIC controller, we have to code the corresponding ISR so that we must be able to discriminate which lines generated the interrupt.
-
-* **SYS**tem **C**on**F**i**G**uration Controller (SYSCFG)
-  > The System Configuration Controller (SYSCFG)  is mainly used to remap the memory accessible in the code area and to manage the external  interrupt line connection to the GPIOs.
+  >The external interrupt/event controller consists of up to 23 edge detectors for generating event/interrupt requests. Each input line can be independently configured to select the type of the interrupt and the corresponding trigger event (rising or falling or both). Each line can also masked independently. A pending register maintains the status line of the interrupt requests.
 
 
 These entities (and consequently the **interrupts** mechanism) are managed based on the configuration of appropriate registers found in the microcontroller.
 
-## Registers for external interrupt management
+## Registers for interrupt management
 *	SYSCFG external interrupt configuration register **(SYSCFG_EXTICRn)**, n:[1:4]
 
     These bits are written by software to select the source input for the **EXTIx** external interrupt.
@@ -107,11 +103,6 @@ void EXTI3_IRQHandler(void){
   EXTI->PR |= 0x01 << 3;                
 }
 ```
-The standard procedure is:
-  * Clean the Pending bit of the IRQHandler within the NVIC;
-  * Execute code;
-  * Clean the Pending bit of the peripheral.
-
 Conventionally, we make sure that the processor spends as little time as possible processing an **ISR**, often we just change the value of some variables, or maybe we configure a value for some *flag*, checked somewhere else, outside the **ISR**, to enable the execution of specific computations or operations.
 
 >:dart: The **C**ortex **M**icrocontroller **S**oftware **I**nterface **S**tandard (**CMSIS**) is a vendor-independent hardware abstraction layer for microcontrollers that are based on ARM® Cortex® processors. 
@@ -140,7 +131,10 @@ A **STM32F4** microcontroller has 7 different *handlers* to manage **interrupts*
 |EXTI9_5_IRQn	|`EXTI9_5_IRQHandler`	|Handler pins connected from line 5 to 9| 
 |EXTI15_10_IRQn	|`EXTI15_10_IRQHandler`	|Handler pins connected from line 10 to 15|
 
-🧐 Keep in mind that pins with the same number are *multiplexed* on a single line, so you have to pay attention to simultaneous use of pins with the same number or even to the use of pins that are on several lines but managed by a single **ISR**. <br>
+🧐
+
+
+Keep in mind that pins with the same number are *multiplexed* on a single line, so you have to pay attention to simultaneous use of pins with the same number or even to the use of pins that are on several lines but managed by a single **ISR**. <br>
 
 For example: using **PA_6** and **PB_8** as inputs to detect external events, the **ISR** to be used will be `EXTI9_5_IRQHandler`, within this it is necessary to discern from which of the two pins actually the request for interruption has arisen.
 ## 
@@ -195,9 +189,6 @@ void EXTI2_IRQHandler(void){
   EXTI->PR |= (0x01 << 2);  // Clear the EXTI pending register
 }
 ```
-The code inside the interupt service routine follows the interrupt lifecycle structure (clear IRQ pendig `NVIC_ClearPendingIRQ(EXTI2_IRQn);` state and the ISR pending state `EXTI->PR |= (0x01 << 2);`).
-
-<img src="img/interrupt_lifecycle.png" alt="drawing" width="600" style="display: block; margin: 0 auto"/>
 
 <br>
 
@@ -275,7 +266,16 @@ Starting from the example presented, insert a third button (with a third **ISR**
 2. Intermittent flashing of the three LEDs for at least one second;
 3. Sequential switching on and off of the three LEDs.
 
-Possibly, implement these three features in separate methods, developed outside the `main()`.
+Possibly, implement these two features in two separate methods, developed outside the `main()`.
+
+
+:pencil:
+
+Create a new circuit consisting of three leds and a push button. The leds show the binary representation of a counter variable. Each time the push button is pressed, the counter is increased by one. The counter can count up to 7 `0b111`. If the push-button is pressed when the counter has reached its maximum value, the count goes back to zero. Below is given a schematic representation of the circuit.
+
+<p align="center">
+  <img src="img/esercitazione_counter_bb.png" width="60%">
+</p>
 
 :question: Which register is used for priority management of **interrupts**? How many (and which) fields is this register divided into for the priority configuration?
 
