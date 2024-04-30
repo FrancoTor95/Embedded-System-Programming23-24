@@ -113,7 +113,7 @@ Probably the simplest application to test the operation of a **DAC** is to gener
 The main program executes, in its infinite life cycle, the commands to bring to the output a voltage value that varies from 0V to 3.3V, with 5ms of delay between different values. Obviously, to evaluate the correct functioning of the **DAC** it is necessary to connect the pin **PA_4** to an oscilloscope.
  
 ```c
-int main{
+int main(void){
     /* MCU Configuration--------------------------------------------------------*/
 
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
@@ -183,6 +183,8 @@ The output value can be checked using the debug interface of the development env
 ```c
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#include <math.h>
+#define ADC_FS 3.3f
 volatile uint16_t voltage = 0;      // Store level of voltage
 volatile float voltage_f = 0;       // Store converted voltage value
 /* USER CODE END 0 */
@@ -270,6 +272,9 @@ The data acquisition can be also designed using an interrupt approach. This last
 ```c
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#include <math.h>
+#define ADC_FS 3.3f
+
 volatile uint16_t voltage = 0;
 volatile float voltage_f = 0;
 void ADC_IRQHandler() {
