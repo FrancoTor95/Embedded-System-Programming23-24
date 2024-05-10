@@ -71,11 +71,11 @@ In particular, looking at the reference manual we get the following information:
 
 * **Sm mode or SMBus**:
 
-    - *$t_{high}$ = CCR * $t_{plck1}$*
-    - *$t_{low}$ = CCR * $t_{plck1}$*
+    - $t_{high}$ = CCR * $t_{plck1}$
+    - $t_{low}$ = CCR * $t_{plck1}$
 * Values for $t_{high}$ and $t_{low}$ (see the `CCR` register description)
-    - *$t_{high}$ = $t_{r(SCL)}$ + $t_{w(SCLH)}$. See device datasheet for the definitions of parameters.*
-    - *$t_{low}$ = $t_{f(SCL)}$ + $t_{w(SCLL)}$. See device datasheet for the definitions of parameters.*
+    - $t_{high}$ = $t_{r(SCL)}$ + $t_{w(SCLH)}$. See device datasheet for the definitions of parameters.
+    - $t_{low}$ = $t_{f(SCL)}$ + $t_{w(SCLL)}$. See device datasheet for the definitions of parameters.
 
 Looking at the datasheet we can find the following table
 <p align="center">
