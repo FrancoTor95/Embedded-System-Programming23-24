@@ -40,6 +40,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
@@ -48,27 +49,126 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void send_str(char *buff, uint8_t len) {
-	for(int i = 0; i < len; i++) {
-		while(!((USART2->SR >> USART_SR_TXE_Pos) & 0x01));
-		USART2->DR = buff[i];
+void SPIConfig(void)
+{
+	/************** STEPS TO FOLLOW *****************
+	1. Enable SPI clock
+	2. Configure the Control Register 1
+	3. Configure the CR2
+	************************************************/
+  RCC->APB2ENR |= (1 << 12);  // Enable SPI1 CLock
 
+  SPI1->CR1 |= (1 << 0) | (1 << 1);   // CPOL=1, CPHA=1
+
+
+  SPI1->CR1 |= (7 << 3);  // BR[2:0] = 011: fPCLK/16, PCLK2 = 80MHz, SPI clk = 5MHz
+
+  SPI1->CR1 &= ~(1 << 7);  // LSBFIRST = 0, MSB first
+
+  SPI1->CR1 |= (1 << 8) | (1 << 9);  // SSM=1, SSi=1 -> Software Slave Management
+
+  SPI1->CR1 &= ~(1 << 10);  // RXONLY = 0, full-duplex
+
+  SPI1->CR1 &= ~(1 << 11);  // DFF=0, 8 bit data
+
+  SPI1->CR2 = 0;
+
+  SPI1->CR1 |= (1 << 2);  // Master Mode
+}
+
+void SPI_Transmit(uint8_t *data, int size)
+{
+
+	/************** STEPS TO FOLLOW *****************
+	1. Wait for the TXE bit to set in the Status Register
+	2. Write the data to the Data Register
+	3. After the data has been transmitted, wait for the BSY bit to reset in Status Register
+	4. Clear the Overrun flag by reading DR and SR
+	************************************************/
+
+	int i=0;
+	while (i<size)
+	{
+	   while (!((SPI1->SR)&(1<<1))) {};  // wait for TXE bit to set -> This will indicate that the buffer is empty
+	   SPI1->DR = data[i];  // load the data into the Data Register
+	   i++;
 	}
+
+
+	/*During discontinuous communications, there is a 2 APB clock period delay between the
+	write operation to the SPI_DR register and BSY bit setting. As a consequence it is
+	mandatory to wait first until TXE is set and then until BSY is cleared after writing the last
+	data.
+	*/
+	while (!((SPI1->SR)&(1<<1))) {};  // wait for TXE bit to set -> This will indicate that the buffer is empty
+	while (((SPI1->SR)&(1<<7))) {};  // wait for BSY bit to Reset -> This will indicate that SPI is not busy in communication
+
+	//  Clear the Overrun flag by reading DR and SR
+	uint8_t temp = SPI1->DR;
+	temp = SPI1->SR;
+
 }
 
-uint8_t rcv_str(char *buff) {
-	uint8_t i = 0;
-	while (!((USART2->SR >> USART_SR_RXNE_Pos) & 0x01)){}
-	buff[i] = (char) USART2->DR;
-	i++;
-	return i;
+void SPI_Receive(uint8_t *data, int size)
+{
+	/************** STEPS TO FOLLOW *****************
+	1. Wait for the BSY bit to reset in Status Register
+	2. Send some Dummy data before reading the DATA
+	3. Wait for the RXNE bit to Set in the status Register
+	4. Read data from Data Register
+	************************************************/
+	GPIOB->ODR &= ~(1 << 6);
+	while (size)
+	{
+		while (((SPI1->SR) & (1 << 7))) {};  // wait for BSY bit to Reset -> This will indicate that SPI is not busy in communication
+		SPI1->DR = 0;  // send dummy data
+		while (!((SPI1->SR) &(1<<0))){};  // Wait for RXNE to set -> This will indicate that the Rx buffer is not empty
+	    *data++ = (SPI1->DR);
+		size--;
+	}
+	GPIOB->ODR |= (1 << 6);
 }
+
+void GPIOConfig(void)
+{
+	RCC->AHB1ENR |= (1 << 0);  // Enable GPIOA Clock
+	RCC->AHB1ENR |= (1 << 1);  // Enable GPIOB Clock
+
+	GPIOA->MODER |= (2 << 10) | (2 << 12) | (2 << 14) | (1 << 18);  // Alternate functions for PA5, PA6, PA7
+
+	GPIOA->OSPEEDR |= (3 << 10) | (3 << 12) | (3 << 14) | (3 << 18);  // HIGH Speed for PA5, PA6, PA7
+
+	GPIOA->AFR[0] |= (5 << 20) | (5 << 24) | (5 << 28);   // AF5(SPI1) for PA5, PA6, PA7
+
+	GPIOB->MODER 	|= (1 << 12);  	//Output for PB6
+	GPIOB->OSPEEDR 	|= (3 << 12);  	// HIGH Speed for PB6
+	GPIOB->ODR 		|= (1 << 6);
+}
+
+void SPI_Enable(void)
+{
+	SPI1->CR1 |= (1 << 6);   // SPE=1, Peripheral enabled
+}
+
+void SPI_Disable(void)
+{
+	SPI1->CR1 &= ~(1 << 6);   // SPE=0, Peripheral Disabled
+}
+
+#define RED 0b00000010
+#define GRE 0b00001000
+#define BLU 0b00100000
+#define ORA 0b00001010
+#define VIO 0b00100010
+#define LBL 0b00101000
+#define WHI 0b00101010
 /* USER CODE END 0 */
 
 /**
@@ -99,70 +199,26 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
-  /* GPIO Configuration (PA2 TX and PA3 RX) */
-  RCC->AHB1ENR |= (1 << RCC_AHB1ENR_GPIOAEN_Pos);
-
-  // PA2 USART2 TX
-  GPIOA->MODER 	|= (0x02 << 4); 		// Alternate function
-  GPIOA->AFR[0] |= (0x07 << 8);			// Alternate function n7 (USART2 TX)
-  GPIOA->OTYPER &= ~(0x03 << 4); 		// Push-Pull (Best suited for single direction line)
-  GPIOA->PUPDR  |= (0x01 << 4); 		// USART should have external Pull-up for higher data rates
-
-  // PA3 USART2 RX
-  GPIOA->MODER 	|= (0x02 << 6); 		// Alternate function
-  GPIOA->AFR[0] |= (0x07 << 12);		// Alternate function n7 (USART2 TX)
-  GPIOA->PUPDR  |= (0x01 << 6); 		// USART should have external Pull-up for higher data rates
-
-
-  /* USART Configuration */
-  RCC->APB1ENR |= (0x01 << RCC_APB1ENR_USART2EN_Pos); 	// Provide clock
-
-  USART2->CR1 |= (0x01 << USART_CR1_UE_Pos); 			      // Enable USART (UE)
-  USART2->CR1 |= (0x01 << USART_CR1_M_Pos); 			      // Define word length (M)
-  USART2->CR2 |= (0x02 << USART_CR2_STOP_Pos); 			    // Define number of stop bits (STOP)
-  USART2->CR1 |= (0x1 << USART_CR1_PCE_Pos); 			      // Enable parity check (PCE)
-  USART2->CR1 &= ~(0x01 << USART_CR1_PS_Pos);			      // Even parity (PS)
-
-  //273.4372
-  USART2->BRR |= (0x111 << USART_BRR_DIV_Mantissa_Pos); // Define Mantissa
-  USART2->BRR  |= (0x07 << 0); 							            // Define Fractional part
-  USART2->CR1 |= (0x01 << USART_CR1_TE_Pos); 			      // Send one idle frame at the beginning (TE)
-
-  USART2->CR1 |= (0x01 << USART_CR1_RE_Pos);			      // Enable Reception (RE)
-
-
-
-  char data_buff[20];
-  data_buff[0] = 'L';
-  data_buff[1] = 'E';
-  data_buff[2] = 'T';
-  data_buff[3] = 'S';
-  data_buff[4] = ' ';
-  data_buff[5] = 'S';
-  data_buff[6] = 'T';
-  data_buff[7] = 'A';
-  data_buff[8] = 'R';
-  data_buff[9] = 'T';
-  data_buff[10] = '\r';
-  data_buff[11] = '\n';
-
-
+  GPIOConfig();
+  SPIConfig();
+  SPI_Enable();
+  uint8_t data = BLU;
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint8_t len = 12;
-  send_str(data_buff, len);
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  len = rcv_str(data_buff);
-	  send_str(data_buff, len);
+	GPIOB->ODR &= ~(1 << 6);
+	  SPI_Transmit(&data, 1);
+	GPIOB->ODR |= (1 << 6);
+	  HAL_Delay(1000);
 
   }
   /* USER CODE END 3 */
@@ -216,6 +272,39 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -232,21 +321,11 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : LD2_Pin */
-  GPIO_InitStruct.Pin = LD2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "mpu_6050.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,6 +40,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
@@ -48,27 +49,20 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void send_str(char *buff, uint8_t len) {
-	for(int i = 0; i < len; i++) {
-		while(!((USART2->SR >> USART_SR_TXE_Pos) & 0x01));
-		USART2->DR = buff[i];
 
-	}
-}
+extern float Ax;
+extern float Ay;
+extern float Az;
 
-uint8_t rcv_str(char *buff) {
-	uint8_t i = 0;
-	while (!((USART2->SR >> USART_SR_RXNE_Pos) & 0x01)){}
-	buff[i] = (char) USART2->DR;
-	i++;
-	return i;
-}
+
+
 /* USER CODE END 0 */
 
 /**
@@ -99,71 +93,23 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  /* GPIO Configuration (PA2 TX and PA3 RX) */
-  RCC->AHB1ENR |= (1 << RCC_AHB1ENR_GPIOAEN_Pos);
-
-  // PA2 USART2 TX
-  GPIOA->MODER 	|= (0x02 << 4); 		// Alternate function
-  GPIOA->AFR[0] |= (0x07 << 8);			// Alternate function n7 (USART2 TX)
-  GPIOA->OTYPER &= ~(0x03 << 4); 		// Push-Pull (Best suited for single direction line)
-  GPIOA->PUPDR  |= (0x01 << 4); 		// USART should have external Pull-up for higher data rates
-
-  // PA3 USART2 RX
-  GPIOA->MODER 	|= (0x02 << 6); 		// Alternate function
-  GPIOA->AFR[0] |= (0x07 << 12);		// Alternate function n7 (USART2 TX)
-  GPIOA->PUPDR  |= (0x01 << 6); 		// USART should have external Pull-up for higher data rates
-
-
-  /* USART Configuration */
-  RCC->APB1ENR |= (0x01 << RCC_APB1ENR_USART2EN_Pos); 	// Provide clock
-
-  USART2->CR1 |= (0x01 << USART_CR1_UE_Pos); 			      // Enable USART (UE)
-  USART2->CR1 |= (0x01 << USART_CR1_M_Pos); 			      // Define word length (M)
-  USART2->CR2 |= (0x02 << USART_CR2_STOP_Pos); 			    // Define number of stop bits (STOP)
-  USART2->CR1 |= (0x1 << USART_CR1_PCE_Pos); 			      // Enable parity check (PCE)
-  USART2->CR1 &= ~(0x01 << USART_CR1_PS_Pos);			      // Even parity (PS)
-
-  //273.4372
-  USART2->BRR |= (0x111 << USART_BRR_DIV_Mantissa_Pos); // Define Mantissa
-  USART2->BRR  |= (0x07 << 0); 							            // Define Fractional part
-  USART2->CR1 |= (0x01 << USART_CR1_TE_Pos); 			      // Send one idle frame at the beginning (TE)
-
-  USART2->CR1 |= (0x01 << USART_CR1_RE_Pos);			      // Enable Reception (RE)
-
-
-
-  char data_buff[20];
-  data_buff[0] = 'L';
-  data_buff[1] = 'E';
-  data_buff[2] = 'T';
-  data_buff[3] = 'S';
-  data_buff[4] = ' ';
-  data_buff[5] = 'S';
-  data_buff[6] = 'T';
-  data_buff[7] = 'A';
-  data_buff[8] = 'R';
-  data_buff[9] = 'T';
-  data_buff[10] = '\r';
-  data_buff[11] = '\n';
-
-
+  // check device ID WHO_AM_I
+  MPU6050_Init();
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint8_t len = 12;
-  send_str(data_buff, len);
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  len = rcv_str(data_buff);
-	  send_str(data_buff, len);
-
+	  MPU6050_Read_Accel();
+	  HAL_Delay(100);
   }
   /* USER CODE END 3 */
 }
@@ -180,22 +126,28 @@ void SystemClock_Config(void)
   /** Configure the main internal regulator output voltage
   */
   __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 16;
-  RCC_OscInitStruct.PLL.PLLN = 336;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 4;
+  RCC_OscInitStruct.PLL.PLLN = 180;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 2;
   RCC_OscInitStruct.PLL.PLLR = 2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Activate the Over-Drive mode
+  */
+  if (HAL_PWREx_EnableOverDrive() != HAL_OK)
   {
     Error_Handler();
   }
@@ -206,13 +158,46 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
+
 }
 
 /**
