@@ -156,7 +156,7 @@ void delay_micro_s(uint16_t delay) {
 }
 ```
 
-Which brings the *timer* counter to 0 and the `ARR` to the desired $\mu s$ to wait. The timer is configured in order to count for $\mu s$ and fire and *update event* when the desired amount of $\mu s$ has passed. The timer configuration in given below
+Which brings the *timer* counter to 0 and the `ARR` to the desired $\mu s$ to wait. The timer is configured in order to count for $\mu s$ and fire and *update event* when the desired amount of $\mu s$ has passed. The timer configuration (with an APB1 clock of $90 MHz$) in given below
 ```c
 void TIM6_basic_setup() {
 
@@ -184,8 +184,6 @@ void TIM6_DAC_IRQHandler() {
 ```
 
 Using the `delay_micro_s(...)` function it is possible to write a method that commands the reading from the ultrasonic sensor:
-
-Note that the actual value of the measured "echo time" must be multiplied by 1.8 as the precision of the timer allows you to evaluate variations of 1.8μs instead of 1μs. This result can be deduced from an experimental analysis with an oscilloscope.
 
 The distance in the main program life cycle is then determined from the `echo_time` value.
 ```c
