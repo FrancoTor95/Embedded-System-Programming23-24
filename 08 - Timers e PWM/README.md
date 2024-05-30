@@ -78,10 +78,15 @@ For this exercise we are going to use the basic Timer `TIM6`.
 
 * First provide clock to the peripheral:
 * Set the management of the update event. This event (caused normally when the timer reaches the ARR register (upcounting)) can be disabled using the `UDIS` bit or we can chose to generate an update in different ways (for example manually by software)
-* Set the prescaler `PSC` and the `ARR` register. Notice that in order to count microseconds we are reducing the clock received by the peripheral in order to count nanoseconds. In fact
+* Set the prescaler `PSC` and the `ARR` register. Notice that in order to count microseconds we are reducing the clock received by the peripheral in order to count nanoseconds.
+In fact
+
 $$ timer_{clock} = \frac{APB_{clock}}{PSC} = \frac{42 MHz}{2} = 24 MHz $$
+
 Remember that $timer_{clock}$ is a frequency. In order to compute the period we can invert the formula
+
 $$ timer_{period} = \frac{1}{timer_{clock}} = \frac{1}{24 MHz} = 41.6 ns $$
+
 Finally we just fire an update event after we counted for 24 increments ($1 \mu s$).
 In general, the formula for the update event frequency calculation is
 
