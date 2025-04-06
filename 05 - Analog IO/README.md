@@ -36,6 +36,17 @@ Also for this device it is possible to determine a _resolution_ (in bits or in t
 ### ADC/DAC and STM32
 
 In the *STM32* devices, the conversion offered by the **ADC** is provided by a **SAR** (**S**uccessive **A**pproximation **R**egister) structure and can operate in different modalities: *single mode*, *continuous mode*, *scan mode*.
+The difference between each mode is primarily related to how many conversions are performed per activation:
+
+- **Single Mode**:  
+  The ADC performs one conversion and then stops. A new conversion requires manual reactivation by the user.
+
+- **Continuous Mode**:  
+  The ADC repeatedly performs conversions continuously, one after another, without stopping.
+
+- **Scan Mode**:  
+  The ADC sequentially performs conversions across multiple user-defined channels. Scan Mode can be combined with either Single or Continuous mode to perform channel scanning either once per activation or continuously.
+
 
 These modalities, and the entire structure, can be used according to three main logics, identified as:
 - *polling mode*
@@ -46,11 +57,33 @@ The results obtained are always stored in a 16-bit register whose bits inside ma
 
 It should also be noted that, generally, the **ADC** implements particular functions to start the conversion of analog values based on the recognition of particular voltage values used as thresholds, defined by the programmer.
 
-The microcontroller used in this tutorial provides a 12-bit **ADC**, which communicate with the outside via 16 different channels. 
-
 <p align="center">
     <img src="img/mcu_families.png" width="45%">
 </p>
+
+To handle channel grouping and priority conversions the **ADC** provide the possibility to define regular or injected groups 
+
+When working with ADC on the STM32F446, there are two primary channel groups with distinct roles and priorities:
+For **regular groups**:
+
+- **Purpose:** For periodic or continuous ADC conversions.
+- **Features:**
+  - Supports up to 16 sequential channels.
+  - Triggered by external events or software commands.
+  - Conversion results stored in regular data registers
+  - Typically handled via polling, DMA, or interrupts.
+  - Ideal for standard sensor readings (e.g., environmental data, temperature, regular voltage measurements).
+
+For **injected groups**
+- **Purpose:** For high-priority or event-triggered ADC conversions.
+- **Features:**
+  - Supports up to 4 channels.
+  - Higher priority than Regular Group; can interrupt ongoing regular conversions.
+  - Conversion results stored in dedicated injected data registers.
+  - Triggered by urgent external events or manually via software.
+  - Ideal for critical measurements (e.g., safety monitoring, fault detection, immediate response to events).
+
+This distinction allows the ADC to flexibly handle both routine and high-priority measurements efficiently.
 
 For what concern the **DAC**, the microcontroller has a 12-bit **DAC** (if more are available, they can also be used simultaneously). In addition to this, other main features are: the possibility to use 8, 10 or 12 bits; the possibility to exploit external *triggers* and the possibility of management via **DMA**.
 
@@ -94,7 +127,7 @@ Below it is reported some of the main registers used to configure and utilize bo
 
 * **ADC** control register x (**ADC_CRx**), *x = 1,2;*
 
-    Configuring this register allows to enable/disable ADC channels, set resolution, set continuous/discontinuous mode, configure scan mode, set data alignment and more.
+    Configuring this register allows to enable/disable ADC channels, set resolution, set continuous/discontinuous mode, configure scan mode, set data alignment and more. One important field is *EXTSEL[3:0]* and *EXTEN* that enable the ADC conversion activation through trigger sources that can be timers or external events (refer to Table 87 of the refernce manual).
 
 * **ADC** regular sequence register *x* (**ADC_SQRx**), *x = 1,2,3;*
 
@@ -103,6 +136,7 @@ Below it is reported some of the main registers used to configure and utilize bo
 * **ADC** regular data register (**ADC_DR**)
 
     These bits are read-only. They contain the conversion result from the regular channels. The data are left- or right-aligned.
+
 
 
 ## Analog I/O and STM32Cube
