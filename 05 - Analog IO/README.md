@@ -87,6 +87,12 @@ This distinction allows the ADC to flexibly handle both routine and high-priorit
 
 For what concern the **DAC**, the microcontroller has a 12-bit **DAC** (if more are available, they can also be used simultaneously). In addition to this, other main features are: the possibility to use 8, 10 or 12 bits; the possibility to exploit external *triggers* and the possibility of management via **DMA**.
 
+If we want to drive a load analogically using the **DAC**, each channel has an associated output buffer, which is essentially an operational amplifier. This buffer isolates the **DAC** output from the connected load, helping to stabilize the output voltage.
+<p align="center">
+    <img src="img/opamp.png" width="80%">
+</p>
+The above image shows the circuit associated to each port where it is clearly visible the connection with the amplifier (that can be enabled by software).
+For more details see the [Reference Manual](https://www.st.com/resource/en/reference_manual/dm00135183-stm32f446xx-advanced-arm-based-32-bit-mcus-stmicroelectronics.pdf).
 ## Registers related to ADC and DAC
 
 Like other peripherals, **ADC** and **DAC** are also managed by appropriately configuring registers, or otherwise using structures and functions exported from the **HAL** driver. The complete management through the latter hides to the programmer a whole series of configurations that are generally necessary for the use of an **ADC** or a **DAC**, starting from the choice of the system clock and then continue with:
