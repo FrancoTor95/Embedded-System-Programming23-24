@@ -1,0 +1,9 @@
+../Drivers/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	2
+../Drivers/CMSIS/Include/core_cm4.h:1775:22:__NVIC_ClearPendingIRQ	2
+../Drivers/CMSIS/Include/core_cm4.h:1814:22:__NVIC_SetPriority	2
+../Core/Src/main.c:60:6:send_str	3
+../Core/Src/main.c:67:6:DMA1_Stream5_IRQHandler	2
+../Core/Src/main.c:82:5:main	2
+../Core/Src/main.c:192:6:SystemClock_Config	3
+../Core/Src/main.c:240:13:MX_GPIO_Init	1
+../Core/Src/main.c:280:6:Error_Handler	1

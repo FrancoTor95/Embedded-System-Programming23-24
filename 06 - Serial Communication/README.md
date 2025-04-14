@@ -234,6 +234,105 @@ To send the values of the ADC through UART, the float number is converted in cha
 
 The full code of the exercise is available within the `usart_adc_stm32` folder.
 
+### Using the DMA
+
+The **USART** can also be paired with the **DMA** peripheral to enable fast data transfers and reduce the computational load on the MCU.
+
+**Direct Memory Access (DMA)** allows high-speed data movement:
+- Between peripherals and memory  
+- Or between memory locations  
+- Without any CPU involvement
+
+This frees up CPU resources for other tasks.
+
+From a general point of view:
+- Dual **AHB master bus** architecture  
+- Independent **FIFOs**  
+- Optimized for bandwidth via a complex **bus matrix**
+
+There are **two DMA controllers** within our MCU of interest (**F446Re**): `DMA1` and `DMA2`
+- Each has **8 streams**
+- Each stream supports up to **8 channels** (requests)
+- An **arbiter** handles request priorities
+
+We will use the **DMA** to transfer received data directly from the `USART` data register (`DR`) into memory.
+
+Lets see the configuration steps
+1. **Configure the USART**  
+   Set it up to generate a signal that triggers the DMA.
+
+2. **Configure the DMA**  
+   Set it to recognize the USART signal and perform the data transfer.
+
+#### USART configuration
+
+Concerning the **USART** we just need to enable the **DMA** to handle reception. In particular, a **DMA** request will be fired when the `RXNE` bit will be set (receive buffer not empty).
+```c
+  USART2->CR3 |= (0x01 << USART_CR3_DMAR_Pos); 			// enable DMA on RXNE activation
+```
+
+#### DMA configuration
+
+The set up of the **DMA** is a little bit more tricky. In particular, we first need to find which **DMA** and which *channel* is able to handle the **USART** peripheral. This information can be found within the reference manual (Table 28)
+
+<p align="center">
+    <img src="img/dma_table.png">
+</p>
+
+Once found the **DMA** and the specific *stream* and *channel* that handles the **USART** *receive* operation (`DMA1_Stream5` `channel4`) we can proceed with the set up
+
+```c
+ /* DMA Setup */
+  RCC->AHB1ENR |= (0x01 << RCC_AHB1ENR_DMA1EN_Pos);
+
+  DMA1_Stream5->CR |= (0b100 << DMA_SxCR_CHSEL_Pos);	// Stream 5 Channel 4 UART2 connection (101)
+
+  DMA1_Stream5->PAR = (uint32_t)&USART2->DR;		// Peripheral address
+  DMA1_Stream5->M0AR = (uint32_t)usart_buffer;		// Memory address
+  DMA1_Stream5->CR &= ~(0b11 << DMA_SxCR_DIR_Pos); 		// Direction Peripheral to memory (00)
+
+  DMA1_Stream5->CR &= ~(0b11 << DMA_SxCR_MSIZE_Pos); 	// 8 bit of memory for DMA transaction (00)
+  DMA1_Stream5->CR &= ~(0b11 << DMA_SxCR_PSIZE_Pos); 	// 8 bit of peripheral for DMA transaction (00)
+
+  DMA1_Stream5->CR |= (0b01 << DMA_SxCR_MINC_Pos);		// Increment memory address to fill buffer (1)
+  DMA1_Stream5->CR &= ~(0b01 << DMA_SxCR_PINC_Pos);		// Do not increment peripheral address (0)
+
+  DMA1_Stream5->CR |= (0b01 << DMA_SxCR_CIRC_Pos); 		// Enable circular mode (1)
+  DMA1_Stream5->CR |= (0b01 << DMA_SxCR_TCIE_Pos); 		// Enable interrupt on transfer complete (1)
+
+  DMA1_Stream5->FCR &= ~(0b1 << DMA_SxFCR_DMDIS_Pos); 	// Enable direct mode, no FIFO (0)
+
+  DMA1_Stream5->NDTR = 4; 								// Number of transaction for data transmission
+  DMA1_Stream5->CR |= (0b1 << DMA_SxCR_EN_Pos); 		// Enable DMA stream
+```
+
+Specifically,
+- Enable the clock through `AHB1` bus
+- Select channel 4 by setting up the `CHSEL` bit field within the `CR` register
+- Specify the address of the *peripheral* and *memory* and the direction of the transaction (peripheral to memory specified by the bit `DIR`)
+- The amount of data we want to take from the peripheral (`PSIZE`) and store within the memory `MSIZE` (in our case just one character so 8 bits)
+- Enable to address increment for the memory (`MINC`) in such a way to not overwrite the received data (after each trasnsaction the **DMA** increse the address by the quantity `MSIZE`)
+- Disable the memory increment for the peripheral (`PINC`)
+- Enable the circular mode (`CIRC`) in such a way to get back to the starting memeory location after all the transaction have been performed. By doing so we set a sort of continous stream. After a complete set of transactions the **DMA** is does not turn off but keep on restarting
+- Enable an interrupt when all the transactions have been performed `TCEIE`
+- Disable the **FIFO** by setting a the direct mode `DMDIS`
+- Specify the number of transactions we want to performe `NDTR`
+- Enable the stream
+
+We do not need to handle a **USART** interrupt but the **DMA** will notify us when a complete amount of transaction was performed. For this reason, we only need to write a **DMA ISR**
+
+```c
+void DMA1_Stream5_IRQHandler() {
+	if(DMA1->HISR >> DMA_HISR_TCIF5_Pos & 0b1) {
+		NVIC_ClearPendingIRQ(DMA1_Stream5_IRQn);
+		data_available = 1;
+		DMA1->HIFCR |= (0b1 << DMA_HIFCR_CTCIF5_Pos); 		// Clear status bit writing 1
+	}
+}
+```
+
+where we set a flag that will tell to our main code that a data is available. A working code is available within the project **usart_dma_stm32**.
+
 
 ## Exercises
 :pencil: 
