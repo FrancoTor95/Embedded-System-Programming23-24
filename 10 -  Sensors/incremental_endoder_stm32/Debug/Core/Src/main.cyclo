@@ -1,0 +1,11 @@
+../Drivers/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	2
+../Drivers/CMSIS/Include/core_cm4.h:1775:22:__NVIC_ClearPendingIRQ	2
+../Drivers/CMSIS/Include/core_cm4.h:1814:22:__NVIC_SetPriority	2
+../Core/Src/main.c:62:6:EXTI2_IRQHandler	1
+../Core/Src/main.c:67:6:EXTI15_10_IRQHandler	3
+../Core/Src/main.c:78:6:gpio_output_AB_setup	1
+../Core/Src/main.c:121:5:main	1
+../Core/Src/main.c:165:6:SystemClock_Config	3
+../Core/Src/main.c:213:13:MX_USART2_UART_Init	2
+../Core/Src/main.c:246:13:MX_GPIO_Init	1
+../Core/Src/main.c:280:6:Error_Handler	1
