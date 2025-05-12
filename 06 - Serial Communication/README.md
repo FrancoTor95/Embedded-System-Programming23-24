@@ -331,7 +331,7 @@ void DMA1_Stream5_IRQHandler() {
 }
 ```
 
-where we set a flag that will tell to our main code that a data is available. A working code is available within the project **usart_dma_stm32**.
+where we set a flag that will tell to our main code that a data is available. A working code is available within the project **usart_dma_stm32**. In particular, **usart_dma_stm32** project implement an application that forward the received data back to the trasmitter. Essentially, it's the same exercise implemented previously but in with the **DMA** functionality.
 
 
 ## Exercises
