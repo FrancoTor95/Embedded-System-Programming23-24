@@ -108,6 +108,7 @@ Any other duty cycle value between these two will result in an angle between 0 a
   <img src="img/servo_system.png">
 </p>
 
+<!--
 ### Servo Motors Control
 Below is reported an example of control of a servomotor of the [Tower Pro, model SG90](http://www.towerpro.com.tw/product/sg90-7): a small servomotor that can rotate the axis about 180 degrees, but not able to develop a significant torque (1.80 Kg/cm). Information about the command signal and connection can be found on the [datasheet](docs/sg90-datasheet.pdf).
 
@@ -131,4 +132,4 @@ After having set the system *clock* at 84MHz, choose:
 
 in order to obtain a 50Hz (20ms) period *PWM* signal
 
-With this configuration, the *duty cycle* value  will have to vary approximately between 10 and 20 to actually be between 1ms and 2ms. However, it will be necessary to carry out empirical tests to determine the minimum and maximum angle of the motor, which often do not fully correspond to what is reported on the datasheets.
+With this configuration, the *duty cycle* value  will have to vary approximately between 10 and 20 to actually be between 1ms and 2ms. However, it will be necessary to carry out empirical tests to determine the minimum and maximum angle of the motor, which often do not fully correspond to what is reported on the datasheets. --!>
