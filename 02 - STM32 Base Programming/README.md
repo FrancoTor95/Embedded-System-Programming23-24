@@ -147,8 +147,44 @@ in which:
   * `%0`, `%1` are the first place-holder and second-placed-holder respectively, which will be replaced by var2 and var1.
 
 Refer to [GCC ASM Contraints](https://gcc.gnu.org/onlinedocs/gcc/Simple-Constraints.html#Simple-Constraints) for a full overview of constraints.
-    
 
+#### Files .s
+
+It is also possible to use `.s` files.
+In the following, we show how to create a simple function to perform the sum of two numbers.
+
+First, create the file `asm_file_sum.s` within the `Core/Src` folder (standard for STM32CubeIDE).
+```c
+  .syntax unified              // ARM Syntax
+  .cpu cortex-m4               // Cortex-M4 processor
+  .thumb                       // Thumb-2 instruction set
+
+  .global asm_file_sum         // Make the function label visible from C file
+  .section .text               // Store in flash memory
+
+// --- Starting point ---
+asm_file_sum:
+  // Standard Procedure Call: 
+  // r0 contains the first input 'a'
+  // r1 contains the second input 'b'
+
+  add r0, r0, r1                // r0 = a + b (The result MUST be stored in r0)
+  bx lr                         // Return to calling C code
+```
+Then, include the following line within the `main.c` file (usually in the Private function prototypes section):
+
+```c
+extern int asm_file_sum(int a, int b);
+```
+
+Finally, you are ready to call the function:
+
+```c
+int a = 10;
+int b = 14;
+
+int c = asm_file_sum(a, b); // The result will be a + b = 24
+```
 
 </br></br>
 
