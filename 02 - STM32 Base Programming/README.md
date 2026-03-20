@@ -159,8 +159,9 @@ First, create the file `asm_file_sum.s` within the `Core/Src` folder (standard f
   .cpu cortex-m4               // Cortex-M4 processor
   .thumb                       // Thumb-2 instruction set
 
-  .global asm_file_sum         // Make the function label visible from C file
-  .section .text               // Store in flash memory
+  .global asm_file_sum          // Make the function label visible from C file
+  .type asm_file_sum, %function // Specify the function type of the jumping label
+  .section .text                // Store in flash memory
 
 // --- Starting point ---
 asm_file_sum:
