@@ -268,7 +268,7 @@ Starting from the example presented, insert a third button (with a third **ISR**
 
 Possibly, implement these two features in two separate methods, developed outside the `main()`.
 
-
+<!--
 :pencil:
 
 Create a new circuit consisting of three leds and a push button. The leds show the binary representation of a counter variable. Each time the push button is pressed, the counter is increased by one. The counter can count up to 7 `0b111`. If the push-button is pressed when the counter has reached its maximum value, the count goes back to zero. Below is given a schematic representation of the circuit.
@@ -276,6 +276,8 @@ Create a new circuit consisting of three leds and a push button. The leds show t
 <p align="center">
   <img src="img/esercitazione_counter_bb.png" width="60%">
 </p>
+
+ -->
 
 :question: Which register is used for priority management of **interrupts**? How many (and which) fields is this register divided into for the priority configuration?
 
