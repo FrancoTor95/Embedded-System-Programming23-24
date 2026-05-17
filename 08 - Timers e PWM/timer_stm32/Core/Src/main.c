@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2024 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -56,7 +56,7 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t time_elapsed = 0;
+volatile uint8_t time_elapsed = 0;
 
 void TIM6_DAC_IRQHandler() {
 	if((TIM6->SR >> TIM_SR_UIF_Pos) & 0x01) {
@@ -74,8 +74,8 @@ void TIM6_basic_setup() {
 	TIM6->CR1 |= (1 << TIM_CR1_URS_Pos);		// Update event generated only by overflow/underflow
 	TIM6->CR1 |= (1 << TIM_CR1_ARPE_Pos); 		// Auto reload preload enabled
 
-	TIM6->PSC = 42000 - 1; 						// CNT incremented every ms
-	TIM6->ARR = 300 - 1; 						// Update event every 300 milliseconds
+	TIM6->PSC = 84000 - 1; 						// CNT incremented every millisecond
+	TIM6->ARR = 4 - 1; 							// Update event every 4 milliseconds
 
 	TIM6->DIER |= (1 << TIM_DIER_UIE_Pos); 		// Trigger an interrupt every update event
 
@@ -109,9 +109,9 @@ void TIM3_PWM_setup() {
 	TIM3->CCER |= (1 << TIM_CCER_CC1E_Pos); 				// Enable output channel 1
 	TIM3->CCER |= (1 << TIM_CCER_CC1P_Pos); 				// Active low
 
-	TIM3->PSC = 42000 - 1; 						// CNT incremented every ms
-	TIM3->ARR = 1000 - 1; 						// Update event every seconds
-	TIM3->CCR1 = 500 - 1;
+	TIM3->PSC = 84 - 1; 						// CNT incremented every micro second
+	TIM3->ARR = 1000 - 1; 						// Update event every millisecond
+	TIM3->CCR1 = 1 - 1;
 
 	TIM3->EGR |= (1 << TIM_EGR_UG_Pos); 		// Fire an update event to update shadow registers
 }
@@ -123,6 +123,7 @@ void TIM3_PWM_setup() {
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -133,37 +134,37 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  TIM6_basic_setup();
+   TIM3_PWM_setup();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  TIM6_basic_setup();
-  TIM3_PWM_setup();
+  //GPIOA->MODER |= (1 << GPIO_MODER_MODE0_Pos);
+
+  TIM6->CR1 |= (1 << TIM_CR1_CEN_Pos);
+  TIM3->CR1 |= (1 << TIM_CR1_CEN_Pos);
+  uint8_t dir = 1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  GPIOA->MODER |= (1 << GPIO_MODER_MODE0_Pos);
-
-  TIM6->CR1 |= (1 << TIM_CR1_CEN_Pos);
-  TIM3->CR1 |= (1 << TIM_CR1_CEN_Pos);
-  uint8_t dir = 0;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 	  if(time_elapsed) {
-		  GPIOA->ODR ^= (1 << 0);
+		  //GPIOA->ODR ^= (1 << 0);
 		  if(dir == 0) {
 			  TIM3->CCR1 = TIM3->CCR1 - 1;
 			  if(TIM3->CCR1 == 0)
@@ -267,8 +268,9 @@ static void MX_USART2_UART_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -292,8 +294,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -314,8 +317,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.

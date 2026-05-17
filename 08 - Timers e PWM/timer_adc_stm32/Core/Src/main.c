@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2024 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -65,7 +65,6 @@ void ADC_IRQHandler() {
 	if(((ADC1->SR >> ADC_SR_EOC_Pos) & 0x01)) {
 		voltage = (uint16_t)ADC1->DR;
 		voltage_f = voltage*(ADC_FS/pow(2, 12));
-		TIM3->SR &= ~(1 << TIM_SR_CC1IF_Pos);
 //		ADC1->CR2 |= (0x1 << ADC_CR2_SWSTART_Pos);
 	}
 }
@@ -128,7 +127,7 @@ void TIM3_PWM_setup() {
 	TIM3->CCER |= (1 << TIM_CCER_CC1E_Pos); 				// Enable output channel 1
 	TIM3->CCER |= (1 << TIM_CCER_CC1P_Pos); 				// Active low
 
-	TIM3->PSC = 42000 - 1; 						// CNT incremented every ms
+	TIM3->PSC = 84000 - 1; 						// CNT incremented every ms
 	TIM3->ARR = 1000 - 1; 						// Update event every seconds
 	TIM3->CCR1 = 500 - 1;
 
@@ -142,6 +141,7 @@ void TIM3_PWM_setup() {
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -271,8 +271,9 @@ static void MX_USART2_UART_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -296,8 +297,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -318,8 +320,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.
